@@ -1,5 +1,5 @@
 # Pipeline Description
-![](pipeline_architecture.png)
+![](pipeline-architecture.png)
 
 ## 1. Connect the Pipeline to Github
 1. Create pipeline file in **.cirleci** folder and name it's **config.yml**
@@ -20,25 +20,23 @@
 ## 3. Continuous Delivery and Deployment
 1. **Update the S3 bucket name:** In frontend folder. We will need to edit the **.../bin/deploy.sh script** and add the name of our previously used S3 bucket.
     ```typescript
-    # Replace the [udagram-test01] below with the S3 bucket name
-    aws s3 cp --recursive --acl public-read ./build s3://[udagram-test01]/
+    # Replace the [tuyennbucket] below with the S3 bucket name
+    aws s3 cp --recursive --acl public-read ./build s3://[tuyennbucket]/
     # The trailing / at the end of the URL is important. 
     ```
-2. **Update the frontend package.json** - add a new "deploy" script. The "scripts" section will look like this:
+2. **Create folder bin in udagram-api** - add new bin folder in udagram folder and create file **deploy.sh**
+    `eb setenv POSTGRES_USERNAME=$POSTGRES_USERNAME POSTGRES_PASSWORD=$POSTGRES_PASSWORD POSTGRES_HOST=$POSTGRES_HOST POSTGRES_DB=$POSTGRES_DB AWS_BUCKET=$AWS_BUCKET AWS_REGION=$AWS_REGION AWS_PROFILE=$AWS_PROFILE JWT_SECRET=$JWT_SECRET URL=$URL`
+
+3. **Update the root level package.json of udagram-api**
+   
     ```typescript
-    "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "deploy": "chmod +x bin/deploy.sh && bin/deploy.sh"
-    }
-    ```
-3. **Update the root level package.json** - Add a command "frontend:deploy", to the root-level package.json as:
-    ```typescript
+    # Replace the [delta] below with the EB application name
+    # Replace the [Delta-env] below with the EB ENV name
     "scripts": {
         ...,
-        "frontend:deploy": "cd reactnd-contacts-complete && npm run deploy"
+       "deploy": "npm run build && eb init delta --region us-east-1 && chmod +x bin/deploy.sh && bin/deploy.sh && eb use Delta-env && eb deploy Delta-env",
+        "build": "npm install . && npm run clean && tsc && cp -rf src/config www/config && cp .npmrc www/.npmrc && cp package.json www/package.json",
     }
-    ```
 4. **Modify the .circleci/config.yml**
     - Updated the orb section:
         ```typescript
@@ -69,5 +67,5 @@
                         requires:
                             - Hold-for-Approval
         ```
-5. **Update environment variables** - Navigate to the CircleCI dashboard. Add values for *AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY and AWS_DEFAULT_REGION*.
+5. **Update environment variables** - Navigate to the CircleCI dashboard => Project Setting => Enviroment seting. Add values for *AWS_BUCKET,AWS_PROFILE,AWS_ACCESS_KEY_ID,AWS_REGION, JWT_SECRET, PORT,POSTGRES_DB, POSTGRES_HOST, POSTGRES_PASSWORD, POSTGRES_USERNAME, URL, AWS_SECRET_ACCESS_KEY and AWS_DEFAULT_REGION*.
 6. **Trigger** - Push the local changes to GitHub, and the CircleCI build will trigger and execute all steps mentioned in the config.yml and deploy your application.
